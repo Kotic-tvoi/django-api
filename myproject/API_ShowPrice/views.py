@@ -1,12 +1,15 @@
+from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
 from .parser import ParseWB, partners
+from .services import get_wb_coef_storage
 
 @api_view(['GET'])
-def get_data(request):
+def get_price(request):
     partner_id = request.GET.get('partner_id', '215484')
     try:
-        partner_name = partners[int(partner_id)]
+        partners[int(partner_id)]
     except KeyError:
         return Response({"error": "Partner not found"}, status=404)
 
@@ -24,4 +27,14 @@ def get_data(request):
         ]
         data.append(row)
 
+    return Response(data)
+
+
+@api_view(['GET'])
+def wb_coeff_storage(request):
+    # Можно получить warehouseID из запроса: /?warehouse_id=12345
+    warehouse_id = request.GET.get("warehouse_id")
+    data = get_wb_coef_storage(warehouse_id)
+
+    # Вернём JSON-ответ пользователю
     return Response(data)
