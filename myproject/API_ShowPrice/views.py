@@ -16,14 +16,13 @@ def get_price(request):
     parser = ParseWB(f"https://www.wildberries.ru/seller/{partner_id}?brand=279103")
     items_info = parser.get_items()
 
-    data = [['id', 'название', 'начальная цена', 'конечная цена без WB карты', 'конечная цена с WB картой']]
+    data = [['id', 'название', 'начальная цена', 'конечная цена без WB карты']]
     for product in items_info.products:
         row = [
             product.id,
             product.name,
             int(product.sizes[0].price.basic / 100),
-            int(product.sizes[0].price.product / 100),
-            int(product.sizes[0].price.product / 100 * (100 - parser.WB_CART) / 100)
+            int(product.sizes[0].price.product / 100)
         ]
         data.append(row)
 
