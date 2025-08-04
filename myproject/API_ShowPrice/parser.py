@@ -4,6 +4,13 @@ from .pydantic_models import Items
 
 WB_CART = 2
 
+dest_name= {
+    'SPb': -1205339,
+    'Сыктывкар': 123585595,
+    'Казань': -2133462,
+    'Москва': -1257786
+}
+
 partners = {
     550199: "Роман Трофимов",
     329266: "Голуб Дарья",
@@ -18,9 +25,10 @@ partners = {
 }
 
 class ParseWB:
-    def __init__(self, url: str):
+    def __init__(self, url: str, dest: str = '-1257786'):
         self.seller_id = self.__get_seller_id(url)
         self.WB_CART = WB_CART
+        self.dest = dest
 
     @staticmethod
     def __get_seller_id(url: str):
@@ -38,7 +46,7 @@ class ParseWB:
                 params={
                     'appType': '1',
                     'curr': 'rub',
-                    'dest': '-3115289',
+                    'dest': self.dest,
                     'lang': 'ru',
                     'page': _page,
                     'sort': 'popular',

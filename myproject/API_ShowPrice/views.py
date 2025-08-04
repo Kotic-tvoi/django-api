@@ -12,8 +12,10 @@ def get_price(request):
         partners[int(partner_id)]
     except KeyError:
         return Response({"error": "Partner not found"}, status=404)
+    
+    dest = request.GET.get('dest', '-1257786')
 
-    parser = ParseWB(f"https://www.wildberries.ru/seller/{partner_id}?brand=279103")
+    parser = ParseWB(f"https://www.wildberries.ru/seller/{partner_id}?brand=279103", dest=dest)
     items_info = parser.get_items()
 
     data = [['id', 'название', 'начальная цена', 'конечная цена без WB карты']]
