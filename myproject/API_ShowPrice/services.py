@@ -2,10 +2,10 @@
 import os
 import requests
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
-# Загружаем переменные окружения
-load_dotenv()
+# # Загружаем переменные окружения
+# load_dotenv()
 
 def get_wb_coef_storage(warehouse_id=None):
     token = os.getenv("WB_API_TOKEN")

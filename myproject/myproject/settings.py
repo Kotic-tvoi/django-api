@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,8 +40,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'API_ShowPrice',
+    # 'API_ShowPrice',
+    'tg_bot',
+    # планировщик
+    'django_apscheduler',
+
+    # ВАЖНО: только этот вариант!
+    'API_ShowPrice.apps.ApiShowpriceConfig',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -106,7 +115,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# Рекомендуется иметь валидный таймзон
+TIME_ZONE = 'Europe/Moscow'   # или ваша
+
 
 USE_I18N = True
 
@@ -122,3 +133,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+CRONJOBS = [
+    ('*/5 * * * *', 'django.core.management.call_command', ['fetch_prices']),
+]
+
+# Чтобы планировщик автозапускался (можете выключить в проде, если нужно)
+APSCHEDULER_AUTOSTART = True
+
+# Не обязательно, но удобно для логов
+APSCHEDULER_DATETIME_FORMAT = "Y-m-d H:i:s"

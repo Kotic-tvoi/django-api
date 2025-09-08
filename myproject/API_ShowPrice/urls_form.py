@@ -1,10 +1,6 @@
 from django.urls import path
-from .views import get_price, wb_coeff_storage
 from .views_extra import price_history_view
 
 urlpatterns = [
-    path('get_price/', get_price),
-    path("get_coeff_storage/", wb_coeff_storage, name="wb_coeff_storage"),
     path("price-history/", price_history_view, name="price_history"),
-
 ]
