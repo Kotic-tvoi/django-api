@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,13 +40,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    # 'API_ShowPrice',
-    'tg_bot',
     # планировщик
     'django_apscheduler',
 
     # ВАЖНО: только этот вариант!
     'API_ShowPrice.apps.ApiShowpriceConfig',
+    'hucster_change',
 ]
 
 
@@ -144,3 +143,11 @@ APSCHEDULER_AUTOSTART = True
 
 # Не обязательно, но удобно для логов
 APSCHEDULER_DATETIME_FORMAT = "Y-m-d H:i:s"
+
+load_dotenv(BASE_DIR / '.env')
+
+# Можно поддержать несколько ключей, через запятую:
+HUCSTER_API_KEYS = [x.strip() for x in os.getenv('HUCSTER_API_KEYS', '').split(',') if x.strip()]
+
+# Базовый URL каталога для сборки ссылок из ключа:
+HUCSTER_BASE_URL = os.getenv('HUCSTER_BASE_URL', 'https://market.e-teleport.ru/catalog/')

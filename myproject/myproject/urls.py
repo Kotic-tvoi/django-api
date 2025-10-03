@@ -21,4 +21,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('API_ShowPrice.urls')),
+    path('hucster/', include('hucster_change.urls')),
 ]
