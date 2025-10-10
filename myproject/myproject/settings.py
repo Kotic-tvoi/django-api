@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-ch18xz5-r09btu@yvc@)#)ryf@!afiao*yw)w#83&g5!x=u#lg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["guzhva.online", "www.guzhva.online"]
 
 
 # Application definition
@@ -151,3 +151,9 @@ HUCSTER_API_KEYS = [x.strip() for x in os.getenv('HUCSTER_API_KEYS', '').split('
 
 # Базовый URL каталога для сборки ссылок из ключа:
 HUCSTER_BASE_URL = os.getenv('HUCSTER_BASE_URL', 'https://market.e-teleport.ru/catalog/')
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
