@@ -25,9 +25,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ch18xz5-r09btu@yvc@)#)ryf@!afiao*yw)w#83&g5!x=u#lg'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 
 ALLOWED_HOSTS = ["guzhva.online", "www.guzhva.online"]
+if DEBUG:
+    ALLOWED_HOSTS += ["127.0.0.1", "localhost", "[::1]"]
 
 
 # Application definition
@@ -153,7 +155,12 @@ HUCSTER_API_KEYS = [x.strip() for x in os.getenv('HUCSTER_API_KEYS', '').split('
 HUCSTER_BASE_URL = os.getenv('HUCSTER_BASE_URL', 'https://market.e-teleport.ru/catalog/')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
