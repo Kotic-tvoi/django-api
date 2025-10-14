@@ -10,7 +10,8 @@ from django_apscheduler.jobstores import DjangoJobStore, register_events
 from django_apscheduler.models import DjangoJobExecution
 
 # Импорт management-команды как callable (используется в run_fetch_prices)
-from API_ShowPrice.management.commands.fetch_prices import Command as FetchPricesCommand
+from price_history_view.management.commands.fetch_prices import Command as FetchPricesCommand
+
 
 logger = logging.getLogger(__name__)
 _scheduler = None

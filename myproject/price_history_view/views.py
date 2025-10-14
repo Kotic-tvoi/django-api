@@ -2,8 +2,7 @@ from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.utils import timezone as djtz
-import csv
-import re
+import csv, re
 
 from .models import PriceRecord
 from .forms import PriceFilterForm
@@ -95,4 +94,4 @@ def price_history_view(request):
     # ----- обычный рендер таблицы -----
     paginator = Paginator(qs, 200)
     page_obj = paginator.get_page(request.GET.get("page"))
-    return render(request, "API_ShowPrice/price_history.html", {"form": form, "rows": page_obj})
+    return render(request, "price_history_view/price_history.html", {"form": form, "rows": page_obj})

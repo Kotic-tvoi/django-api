@@ -42,11 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    # планировщик
-    'django_apscheduler',
 
-    # ВАЖНО: только этот вариант!
-    'API_ShowPrice.apps.ApiShowpriceConfig',
+    "get_price",
+    "wb_coeff_storage",
+    "price_history_view",
+    "django_apscheduler",
     'hucster_change',
 ]
 

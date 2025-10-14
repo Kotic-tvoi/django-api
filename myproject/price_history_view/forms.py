@@ -1,5 +1,5 @@
 from django import forms
-from API_ShowPrice.parser import partners  # dict {id: "Имя"}
+from get_price.parser import partners  # dict {id: "Имя"}
 
 class PriceFilterForm(forms.Form):
     partner = forms.ChoiceField(

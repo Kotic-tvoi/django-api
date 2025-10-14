@@ -11,6 +11,7 @@ class PriceRecord(models.Model):
 
     class Meta:
         # защищаемся от дублей в рамках одного запуска
+        db_table = "API_ShowPrice_pricerecord" 
         constraints = [
             models.UniqueConstraint(
                 fields=["created_at", "partner_id", "dest", "item_id"],

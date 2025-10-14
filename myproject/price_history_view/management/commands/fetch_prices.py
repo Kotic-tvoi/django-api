@@ -3,10 +3,9 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from API_ShowPrice.models import PriceRecord
-from API_ShowPrice.parser import ParseWB, partners  # dict {id: name}
-from API_ShowPrice.pydantic_models import Items
-
+from price_history_view.models import PriceRecord
+from get_price.parser import ParseWB, partners
+from get_price.pydantic_models import Items
 
 def _rub_int(value) -> int:
     """Из копеек → ЦЕЛЫЕ рубли (округление к ближайшему)."""
