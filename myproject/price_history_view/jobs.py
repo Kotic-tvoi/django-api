@@ -11,7 +11,7 @@ from django_apscheduler.models import DjangoJobExecution
 
 # Импорт management-команды как callable (используется в run_fetch_prices)
 from price_history_view.management.commands.fetch_prices import Command as FetchPricesCommand
-
+from django.core.management import call_command
 
 logger = logging.getLogger(__name__)
 _scheduler = None
@@ -24,6 +24,12 @@ def delete_old_job_executions(max_age: int = 7 * 24 * 60 * 60) -> None:
 
 
 # === Функции заданий — на верхнем уровне (сериализуемые) ===
+
+
+def run_purge_old_prices() -> None:
+    logger.info("Running job: purge_old_prices (30 days)")
+    call_command("purge_old_prices", days=30)
+
 
 def run_fetch_prices() -> None:
     """Запускает сбор цен (эквивалент `python manage.py fetch_prices`)."""
@@ -76,6 +82,19 @@ def start() -> None:
         jobstore="default",
         replace_existing=True,
         max_instances=1,
+    )
+
+    scheduler.add_job(
+        id="purge_old_prices_daily",
+        func="price_history_view.jobs:run_purge_old_prices",
+        trigger="cron",
+        hour=3,
+        minute=15,
+        jobstore="default",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=600,  # 10 минут на опоздание
     )
 
     register_events(scheduler)

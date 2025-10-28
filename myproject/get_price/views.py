@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .parser import ParseWB, partners, dest_name
+from common.wb import fetch_partner_items
 
 @api_view(["GET"])
 def get_price(request):
@@ -16,15 +17,8 @@ def get_price(request):
     items = ParseWB(f"https://www.wildberries.ru/seller/{seller_id}", dest=dest).get_items()
 
     data = []
-    for product in items.products:
-        row = [
-            product.id,
-            product.name,
-            int(product.sizes[0].price.basic / 100),
-            int(product.sizes[0].price.product / 100)
-        ]
-        data.append(row)
-
+    for row in fetch_partner_items(partner_id, dest):
+        data.append([row["item_id"], row["item_name"], row["price_basic"], row["price_product"]])
     return Response(data)
 
 

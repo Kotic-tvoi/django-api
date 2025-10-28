@@ -66,7 +66,7 @@ ROOT_URLCONF = 'myproject.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        "DIRS": [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -163,4 +163,8 @@ else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+
+STATICFILES_DIRS = [BASE_DIR / "static"]  # если хранишь статику рядом с кодом
+# для продакшена:
+STATIC_ROOT = BASE_DIR / "staticfiles"
 

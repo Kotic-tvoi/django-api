@@ -3,9 +3,11 @@ from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.utils import timezone as djtz
 import csv, re
+from django.utils.http import urlencode
 
 from .models import PriceRecord
 from .forms import PriceFilterForm
+from get_price.parser import partners 
 
 
 def price_history_view(request):
@@ -76,22 +78,25 @@ def price_history_view(request):
         resp["Content-Disposition"] = 'attachment; filename="price_history.xlsx"'
         return resp
 
-    if export == "csv":
-        resp = HttpResponse(content_type="text/csv; charset=utf-8")
-        resp["Content-Disposition"] = 'attachment; filename="price_history.csv"'
-
-        # BOM — чтобы Excel корректно понял UTF-8 и кириллицу
-        resp.write("\ufeff")
-        writer = csv.writer(resp)  # при необходимости можно delimiter=';'
-        writer.writerow(["created_at", "partner_id", "dest", "item_id", "item_name", "price_basic", "price_product"])
-
-        for r in qs.iterator(chunk_size=2000):
-            dt_str = djtz.localtime(r.created_at).strftime("%Y-%m-%d %H:%M:%S")
-            writer.writerow([dt_str, r.partner_id, r.dest, r.item_id, r.item_name, r.price_basic, r.price_product])
-
-        return resp
-
     # ----- обычный рендер таблицы -----
     paginator = Paginator(qs, 200)
+    page_num = request.GET.get("page", 1)
     page_obj = paginator.get_page(request.GET.get("page"))
-    return render(request, "price_history_view/price_history.html", {"form": form, "rows": page_obj})
+    for rec in page_obj.object_list:
+        if not getattr(rec, "partner_name", ""):
+            rec.partner_name = partners.get(rec.partner_id, "")
+        if not getattr(rec, "article", ""):
+            rec.article = ""  # или заполни чем-то из item_name по шаблону
+        if not getattr(rec, "price_before_spp", None):
+            rec.price_before_spp = rec.price_basic
+
+    # соберём хвост без page для ссылок пагинации
+    params = request.GET.copy()
+    params.pop("page", None)
+    query_tail = urlencode(params, doseq=True)  # напр. "partner=215484&item_ids=123"
+    ctx = {
+        "form": form,
+        "rows": page_obj,
+        "query_tail": f"&{query_tail}" if query_tail else "",
+    }
+    return render(request, "price_history_view/price_history.html", ctx)

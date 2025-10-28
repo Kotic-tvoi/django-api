@@ -1,0 +1,53 @@
+
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Главная • Панель проекта</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- (если уже добавлял иконки) -->
+  <!-- <link rel="icon" href="{% static 'site/favicon.ico' %}"> -->
+  <style>
+    :root{--bg:#0b1220;--card:#121a2b;--border:#1f2a44;--text:#e8eefc;--muted:#9bb0d3;--accent:#3656d8}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
+    .wrap{max-width:1000px;margin:0 auto;padding:32px}
+    h1{margin:0 0 12px;font-size:28px} p.muted{color:var(--muted);margin:0 0 24px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+    .card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--border);
+          border-radius:16px;padding:18px;transition:.15s transform,.15s border-color}
+    .card:hover{transform:translateY(-2px);border-color:var(--accent)}
+    .card h3{margin:0 0 6px;font-size:18px} .card p{margin:0;color:var(--muted);font-size:14px}
+    footer{margin-top:32px;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Панель проекта</h1>
+    <p class="muted">Быстрые ссылки:</p>
+
+    <div class="grid">
+      <a class="card" href="/reports/price-history/">
+        <h3>История цен</h3>
+      </a>
+
+      <a class="card" href="/parser/get_price/?partner_id=215484&dest=-1257786">
+        <h3>Текущие цены (API)</h3>
+        <p>JSON по партнёру (JKeratin) и региону (Москва).</p>
+      </a>
+
+      <a class="card" href="/storage/get_coeff_storage/">
+        <h3>Хранилище коэффициентов</h3>
+        <p>WB коэффициенты.</p>
+      </a>
+
+      <a class="card" href="/admin/">
+        <h3>Админ-панель</h3>
+        <p>Управление данными и пользователями.</p>
+      </a>
+    </div>
+
+    <footer>© {{ now|default:"" }} guzhva.online</footer>
+  </div>
+</body>
+</html>

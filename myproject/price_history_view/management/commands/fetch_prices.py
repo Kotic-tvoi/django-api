@@ -1,77 +1,50 @@
-# API_ShowPrice/management/commands/fetch_prices.py
-
+# price_history_view/management/commands/fetch_prices.py
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-
 from price_history_view.models import PriceRecord
-from get_price.parser import ParseWB, partners
-from get_price.pydantic_models import Items
+from get_price.parser import ParseWB, partners, dest_name  # partners — твой словарь
 
-def _rub_int(value) -> int:
-    """Из копеек → ЦЕЛЫЕ рубли (округление к ближайшему)."""
-    try:
-        v = int(value)
-    except Exception:
-        return 0
-    return (v + 50) // 100
-
+def fetch_partner_items(partner_id: int, dest: str):
+    items = ParseWB(f"https://www.wildberries.ru/seller/{partner_id}", dest=dest).get_items()
+    rows = []
+    for p in items.products:
+        try:
+            basic = int(p.sizes[0].price.basic / 100)
+            product = int(p.sizes[0].price.product / 100)
+        except Exception:
+            continue
+        # бук. артикул — подстрой под твои pydantic-модели
+        vendor = getattr(p, "vendorCode", "") or getattr(p, "supplierVendorCode", "") or ""
+        rows.append({
+            "item_id": p.id,
+            "item_name": p.name,
+            "price_basic": basic,
+            "price_product": product,
+            "article": vendor,
+        })
+    return rows
 
 class Command(BaseCommand):
-    help = "Fetch current prices and store snapshots in DB (integer RUB, dest disabled)"
+    help = "Fetch WB prices and save snapshots"
 
-    def add_arguments(self, parser):
-        parser.add_argument("--partner-id", type=int, help="Fetch only this partner_id")
-
-    def handle(self, *args, **options):
+    def handle(self, *args, **opts):
         now = timezone.now()
+        dest = str(dest_name["Москва"])  # если у тебя используется регион
 
-        # либо один партнёр из опции, либо все из словаря partners
-        partner_ids = [options["partner_id"]] if options.get("partner_id") else list(partners.keys())
-
-        total_rows = 0
-
-        for pid in partner_ids:
-            # ВАЖНО: ParseWB ждёт URL вида .../seller/{id}?brand=279103
-            url = f"https://www.wildberries.ru/seller/{pid}?brand=279103"
-            try:
-                parser = ParseWB(url=url)  # dest оставим по умолчанию ('-1257786')
-            except Exception as e:
-                self.stderr.write(self.style.ERROR(f"Parser init failed for partner {pid}: {e}"))
-                continue
-
-            try:
-                # get_items() без аргументов (сигнатура: def get_items(self))
-                items: Items = parser.get_items()
-            except Exception as e:
-                self.stderr.write(self.style.ERROR(f"Failed to fetch items for partner {pid}: {e}"))
-                continue
-
-            batch = []
-            for product in getattr(items, "products", []):
-                try:
-                    size0 = product.sizes[0]
-                    basic = _rub_int(getattr(size0.price, "basic", 0))
-                    product_price = _rub_int(getattr(size0.price, "product", 0))
-                    item_id = int(product.id)
-                    name = (product.name or "")[:255]
-                except Exception:
-                    # пропускаем «битые» позиции
-                    continue
-
-                batch.append(PriceRecord(
-                    created_at=now,        # единая метка времени — один «снимок»
-                    partner_id=pid,
-                    dest="",               # регионы отключены в хранилище
-                    item_id=item_id,
-                    item_name=name,
-                    price_basic=basic,     # ЦЕЛЫЕ рубли
-                    price_product=product_price,
+        bulk = []
+        for partner_id, partner_name in partners.items():
+            for r in fetch_partner_items(partner_id, dest):
+                bulk.append(PriceRecord(
+                    created_at=now,
+                    partner_id=partner_id,
+                    partner_name=partner_name,           # ← ЗАПОЛНЯЕМ
+                    dest=dest,
+                    item_id=r["item_id"],
+                    item_name=r["item_name"],
+                    article=r["article"],               # ← ЗАПОЛНЯЕМ
+                    price_basic=r["price_basic"],
+                    price_before_spp=r["price_basic"],  # ← ПОКА ТАК (до СПП = basic)
+                    price_product=r["price_product"],
                 ))
-
-            if batch:
-                PriceRecord.objects.bulk_create(batch, ignore_conflicts=True)
-                total_rows += len(batch)
-
-        self.stdout.write(self.style.SUCCESS(
-            f"Saved ~{total_rows} rows at {now:%Y-%m-%d %H:%M:%S} (partners={len(partner_ids)})"
-        ))
+        PriceRecord.objects.bulk_create(bulk, ignore_conflicts=True)
+        self.stdout.write(self.style.SUCCESS(f"Saved {len(bulk)} rows"))
