@@ -7,13 +7,12 @@ from django.utils.http import urlencode
 
 from .models import PriceRecord
 from .forms import PriceFilterForm
-from get_price.parser import partners 
+from get_price.constants import partners 
 
 
 def price_history_view(request):
     form = PriceFilterForm(request.GET or None)
-    qs = PriceRecord.objects.all()
-
+    qs = PriceRecord.objects.all().order_by("-created_at", "partner_id", "item_id")
     # ----- фильтрация -----
     if form.is_valid():
         partner = form.cleaned_data.get("partner")
@@ -83,6 +82,8 @@ def price_history_view(request):
     page_num = request.GET.get("page", 1)
     page_obj = paginator.get_page(request.GET.get("page"))
     for rec in page_obj.object_list:
+        if rec.price_before_spp is None:
+            rec.price_before_spp = ""   # только для отображения
         if not getattr(rec, "partner_name", ""):
             rec.partner_name = partners.get(rec.partner_id, "")
         if not getattr(rec, "article", ""):

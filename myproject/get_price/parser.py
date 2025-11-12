@@ -1,65 +1,77 @@
 import requests
 import re
+import cloudscraper
 from .pydantic_models import Items
 
-WB_CART = 2
-
-dest_name= {
-    'SPb': -1205339,
-    'Сыктывкар': 123585595,
-    'Казань': -2133462,
-    'Москва': -1257786
-}
-
-partners = {
-    550199: "Роман Трофимов",
-    329266: "Голуб Дарья",
-    77377: "Наталья Баринова",
-    425347: "Анисимов Павел",
-    1409657: "Мария Митина",
-    1266117: "Alex Shchotski",
-    826325: "Игорь",
-    1383307: "Екатерина Прокофьева",
-    533329: "Шелуханова Юлия",
-    215484: "JKeratin",
-}
 
 class ParseWB:
-    def __init__(self, url: str, dest: str = '-1257786'):
+    def __init__(self, url: str, dest: str = '-1275551'):
         self.seller_id = self.__get_seller_id(url)
-        self.WB_CART = WB_CART
-        self.dest = dest
+        self.dest = str(dest)
+        # создаём scraper вместо requests.Session()
+        self.session = cloudscraper.create_scraper(browser={
+            "browser": "chrome",
+            "platform": "windows",
+            "desktop": True
+        })
 
     @staticmethod
     def __get_seller_id(url: str):
         regex = r'(?<=seller/)\d+'
         seller_id = re.search(regex, url)[0]
         return seller_id
+    
+
+    def _headers(self):
+        return {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/142.0.0.0 Safari/537.36"
+            ),
+            "Accept": "application/json, text/plain, */*",
+            "Referer": f"https://www.wildberries.ru/seller/{self.seller_id}",
+            "Origin": "https://www.wildberries.ru",
+        }
 
     def get_items(self):
         _page = 1
         all_products = []
 
         while True:
-            response = requests.get(
-                'https://catalog.wb.ru/sellers/v2/catalog',
-                params={
-                    'appType': '1',
-                    'curr': 'rub',
-                    'dest': self.dest,
-                    'lang': 'ru',
-                    'page': _page,
-                    'sort': 'popular',
-                    'spp': '30',
-                    'supplier': self.seller_id,
-                    'uclusters': '3',
-                    'brand': 279103
-                }
-            )
-            _page += 1
-            items_info = Items.model_validate(response.json()["data"])
-            if not items_info.products:
-                break
-            all_products.extend(items_info.products)
+            params = {
+                "appType": "1",
+                "curr": "rub",
+                "dest": self.dest,
+                "lang": "ru",
+                "page": _page,
+                "sort": "popular",
+                "spp": "30",
+                "supplier": self.seller_id,
+                "uclusters": "3",
+            }
+
+            try:
+                response = self.session.get(
+                    f"https://www.wildberries.ru/__internal/catalog/sellers/v4/catalog",
+                    headers=self._headers(),
+                    params=params
+                )
+
+                if response.status_code != 200:
+                    print(f"⚠️ Ошибка WB: {response.status_code}")
+                    print(response.text[:200])
+                    break
+
+
+                items_info = Items.model_validate(response.json())
+                if not items_info.products:
+                    break
+
+                all_products.extend(items_info.products)
+                _page += 1
+
+            except requests.RequestException as e:
+                print("⚠️ Ошибка запроса:", e)
 
         return Items(products=all_products)

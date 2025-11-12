@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'rest_framework',
 
     "get_price",
-    "wb_coeff_storage",
     "price_history_view",
     "django_apscheduler",
     'hucster_change',
@@ -168,3 +167,7 @@ STATICFILES_DIRS = [BASE_DIR / "static"]  # если хранишь статик
 # для продакшена:
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+
+WB_DISCOUNTS_API_TOKEN = os.getenv("WB_API_TOKEN", "")  # токен «Скидки и цены»
+WB_SHOP_ID = int(os.getenv("WB_SHOP_ID", "215484"))               # наш кабинет JKeratin
+WB_DISCOUNTS_API_URL = "https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter"
