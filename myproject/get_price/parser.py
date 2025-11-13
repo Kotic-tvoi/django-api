@@ -1,50 +1,58 @@
-import requests
 import re
-import cloudscraper
+from concurrent.futures import ThreadPoolExecutor
+from playwright.sync_api import sync_playwright
 from .pydantic_models import Items
+
+executor = ThreadPoolExecutor(max_workers=1)  # один поток для Playwright
 
 
 class ParseWB:
     def __init__(self, url: str, dest: str = '-1275551'):
-        self.seller_id = self.__get_seller_id(url)
+        self.url = url
         self.dest = str(dest)
-        # создаём scraper вместо requests.Session()
-        self.session = cloudscraper.create_scraper(browser={
-            "browser": "chrome",
-            "platform": "windows",
-            "desktop": True
-        })
-        try:
-            resp = self.session.get("https://www.wildberries.ru", timeout=10)
-            self.session.cookies.update(resp.cookies)
-            print("🍪 WB cookies и токен получены:", list(resp.cookies.get_dict().keys()))
-        except Exception as e:
-            print("⚠️ Не удалось инициализировать сессию WB:", e)
-
+        self.seller_id = self.__get_seller_id(url)
 
     @staticmethod
     def __get_seller_id(url: str):
-        regex = r'(?<=seller/)\d+'
-        seller_id = re.search(regex, url)[0]
-        return seller_id
-    
+        m = re.search(r"(?<=seller/)\d+", url)
+        if not m:
+            raise ValueError(f"Не найден seller_id в ссылке: {url}")
+        return m.group(0)
 
-    def _headers(self):
-        return {
-            "User-Agent": (
+    # ---- Главное изменение — перенос Playwright в поток ----
+    def _run_in_thread(self, func, *args, **kwargs):
+        return executor.submit(func, *args, **kwargs).result()
+
+    # Теперь get_items запускаем внутри потока, чтобы Django ASGI не ругался
+    def get_items(self):
+        return self._run_in_thread(self._get_items_playwright)
+
+    # ---- Синхронный метод, который реально работает с Playwright ----
+    def _get_items_playwright(self):
+        play = sync_playwright().start()
+
+        browser = play.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-blink-features=AutomationControlled",
+            ],
+        )
+
+        context = browser.new_context(
+            user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/142.0.0.0 Safari/537.36"
-            ),
-            "Accept": "application/json, text/plain, */*",
-            "Referer": f"https://www.wildberries.ru/seller/{self.seller_id}",
-            "Origin": "https://www.wildberries.ru",
-            "Connection": "keep-alive",
-            "Cache-Control": "no-cache",
-            "Pragma": "no-cache"
-        }
+            )
+        )
 
-    def get_items(self):
+        page = context.new_page()
+        page.goto("https://www.wildberries.ru", timeout=60000)
+
+        base_url = "https://www.wildberries.ru/__internal/catalog/sellers/v4/catalog"
+
         _page = 1
         all_products = []
 
@@ -61,33 +69,23 @@ class ParseWB:
                 "uclusters": "3",
             }
 
-            try:
-                response = self.session.get(
-                    f"https://www.wildberries.ru/__internal/catalog/sellers/v4/catalog",
-                    headers=self._headers(),
-                    params=params
-                )
+            response = context.request.get(base_url, params=params)
+            if response.status != 200:
+                print("⚠️ Ошибка WB:", response.status)
+                break
 
-                if response.status_code == 498:
-                    print("⚠️ WB вернул 498, обновляю токен...")
-                    # повторим авторизацию
-                    self.session.get("https://www.wildberries.ru", timeout=10)
-                    continue
+            data = response.json()
+            items_info = Items.model_validate(data)
 
-                if response.status_code != 200:
-                    print(f"⚠️ Ошибка WB: {response.status_code}")
-                    print(response.text[:200])
-                    break
+            if not items_info.products:
+                break
 
+            all_products.extend(items_info.products)
+            _page += 1
 
-                items_info = Items.model_validate(response.json())
-                if not items_info.products:
-                    break
-
-                all_products.extend(items_info.products)
-                _page += 1
-
-            except requests.RequestException as e:
-                print("⚠️ Ошибка запроса:", e)
+        # корректно закрываем playwright
+        context.close()
+        browser.close()
+        play.stop()
 
         return Items(products=all_products)
