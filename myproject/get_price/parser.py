@@ -14,6 +14,13 @@ class ParseWB:
             "platform": "windows",
             "desktop": True
         })
+        try:
+            resp = self.session.get("https://www.wildberries.ru", timeout=10)
+            self.session.cookies.update(resp.cookies)
+            print("🍪 WB cookies и токен получены:", list(resp.cookies.get_dict().keys()))
+        except Exception as e:
+            print("⚠️ Не удалось инициализировать сессию WB:", e)
+
 
     @staticmethod
     def __get_seller_id(url: str):
@@ -32,6 +39,9 @@ class ParseWB:
             "Accept": "application/json, text/plain, */*",
             "Referer": f"https://www.wildberries.ru/seller/{self.seller_id}",
             "Origin": "https://www.wildberries.ru",
+            "Connection": "keep-alive",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
         }
 
     def get_items(self):
@@ -57,6 +67,12 @@ class ParseWB:
                     headers=self._headers(),
                     params=params
                 )
+
+                if response.status_code == 498:
+                    print("⚠️ WB вернул 498, обновляю токен...")
+                    # повторим авторизацию
+                    self.session.get("https://www.wildberries.ru", timeout=10)
+                    continue
 
                 if response.status_code != 200:
                     print(f"⚠️ Ошибка WB: {response.status_code}")
