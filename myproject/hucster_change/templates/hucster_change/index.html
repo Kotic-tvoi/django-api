@@ -1,0 +1,54 @@
+<h1>Hucster Control Panel</h1>
+
+<h2>Отправка всех артикулов</h2>
+
+<button onclick="runAll('ozon')">Отправить OZON</button>
+<button onclick="runAll('wb')">Отправить WB</button>
+
+<hr>
+
+<h2>Отправить выбранные артикулы</h2>
+
+<form id="manualForm" onsubmit="sendSelected(event)">
+    <label>Введите ключи через запятую:</label><br>
+    <textarea name="keys" id="keys" rows="4" cols="60"></textarea><br><br>
+
+    <label>Маркетплейс:</label>
+    <select name="mp" id="mp">
+        <option value="ozon">OZON</option>
+        <option value="wb">WB</option>
+    </select>
+
+    <br><br>
+    <button type="submit">Отправить</button>
+</form>
+
+<hr>
+
+<h2>Результаты:</h2>
+<pre id="result"></pre>
+
+<script>
+function runAll(mp) {
+    fetch(`/hucster/run-all/${mp}/`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById("result").innerText = JSON.stringify(data, null, 4)
+        })
+}
+
+function sendSelected(event) {
+    event.preventDefault();
+
+    const formData = new FormData(document.getElementById("manualForm"));
+
+    fetch("/hucster/run-selected/", {
+        method: "POST",
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.querySelector("#result").innerText = JSON.stringify(data, null, 4);
+    });
+}
+</script>

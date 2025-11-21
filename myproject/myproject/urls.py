@@ -8,5 +8,5 @@ urlpatterns = [
     path("parser/", include("get_price.urls", namespace="get_price")),
     # path("storage/", include("wb_coeff_storage.urls", namespace="wb_coeff_storage")),
     # path("reports/", include("price_history_view.urls", namespace="price_history_view")),
-    # path('hucster/', include('hucster_change.urls')),
+    path("hucster/", include("hucster_change.urls")),
 ]

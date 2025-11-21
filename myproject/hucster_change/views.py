@@ -1,42 +1,64 @@
-import json
-from typing import Any
-from django.http import JsonResponse, HttpRequest
-from django.views.decorators.csrf import csrf_exempt
-from .auth import require_api_key
-from .runner import is_valid_key, run_once_key, run_many_keys
 
-def _json(request: HttpRequest) -> dict[str, Any]:
-    try:
-        return json.loads(request.body or b"{}")
-    except Exception:
-        return {}
+from django.shortcuts import render
+from django.http import JsonResponse
+from asyncio import run
+from .runner import run_many_keys_with_back
+from .constants import product_keys, MAX_RETRIES, CONCURRENCY
+from django.views.decorators.csrf import csrf_exempt
+
+def hucster_page(request):
+    """Главная страница Хакстера"""
+    return render(request, "hucster_change/index.html")
+
+
+def run_all_ozon(request):
+    keys = list(product_keys.keys())
+
+    results = run(run_many_keys_with_back(
+        keys, 
+        mp_key="ozon", 
+        concurrency=CONCURRENCY, 
+        max_retries=MAX_RETRIES
+    ))
+
+    return JsonResponse(results, safe=False)
+
+
+def run_all_wb(request):
+    keys = list(product_keys.keys())
+
+    results = run(run_many_keys_with_back(
+        keys,
+        mp_key="wb", 
+        concurrency=CONCURRENCY, 
+        max_retries=MAX_RETRIES
+    ))
+
+    return JsonResponse(results, safe=False)
+
 
 @csrf_exempt
-@require_api_key
-async def send(request: HttpRequest):
-    if request.method != "POST":
-        return JsonResponse({"detail": "Method not allowed"}, status=405)
+def run_selected(request):
+    if request.method == "POST":
+        text = request.POST.get("keys", "")
+        mp = request.POST.get("mp")
 
-    data = _json(request)
-    mp = (data.get("mp") or "wb").lower()
-    concurrency = int(data.get("concurrency") or 3)
+        # Разбираем ввод через Enter
+        articles = [a.strip() for a in text.splitlines() if a.strip()]
 
-    # режим 1: один ключ
-    if isinstance(data.get("key"), str):
-        key = data["key"].strip()
-        if not is_valid_key(key):
-            return JsonResponse({"detail": "Некорректный key: ожидаю 32-символьный hex"}, status=400)
-        result = await run_once_key(key, mp)
-        return JsonResponse(result, status=200)
+        # ищем ключи по названиям
+        keys = [
+            key32 for key32, name in product_keys.items()
+            if name in articles
+        ]
 
-    # режим 2: список ключей
-    keys = data.get("keys")
-    if isinstance(keys, list) and keys:
-        cleaned = [str(k).strip() for k in keys]
-        bad = [k for k in cleaned if not is_valid_key(k)]
-        if bad:
-            return JsonResponse({"detail": "Некорректные ключи", "bad": bad}, status=400)
-        results = await run_many_keys(cleaned, mp, concurrency=concurrency)
-        return JsonResponse({"count": len(results), "results": results}, status=200)
+        results = run(run_many_keys_with_back(
+            keys,
+            mp_key=mp,
+            concurrency=3,
+            max_retries=3
+        ))
 
-    return JsonResponse({"detail": "Укажите 'key' (str) или 'keys' (list[str])"}, status=400)
+        return JsonResponse(results, safe=False)
+
+    return JsonResponse({"error": "Метод не POST"})

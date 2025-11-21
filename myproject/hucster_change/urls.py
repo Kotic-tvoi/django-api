@@ -1,6 +1,9 @@
 from django.urls import path
-from .views import send  # единый эндпоинт
+from . import views
 
 urlpatterns = [
-    path('send/', send, name='hucster_send'),
+    path('', views.hucster_page, name='hucster_page'),
+    path('run-all/ozon/', views.run_all_ozon, name='run_all_ozon'),
+    path('run-all/wb/', views.run_all_wb, name='run_all_wb'),
+    path('run-selected/', views.run_selected, name='run_selected'),
 ]

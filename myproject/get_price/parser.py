@@ -67,11 +67,11 @@ class ParseWB:
                     headers=self._headers(),
                     params=params
                 )
-                if response.status_code == 498:
-                    print("⚠️ WB вернул 498, обновляю токен...")
-                    # повторим авторизацию
-                    self.session.get("https://www.wildberries.ru", timeout=10)
-                    continue
+                # if response.status_code == 498:
+                #     print("⚠️ WB вернул 498, обновляю токен...")
+                #     # повторим авторизацию
+                #     self.session.get("https://www.wildberries.ru", timeout=10)
+                #     continue
 
                 if response.status_code != 200:
                     print(f"⚠️ Ошибка WB: {response.status_code}")
