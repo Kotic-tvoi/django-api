@@ -8,12 +8,23 @@ class ParseWB:
     def __init__(self, url: str, dest: str = '-1275551'):
         self.seller_id = self.__get_seller_id(url)
         self.dest = str(dest)
-        # создаём scraper вместо requests.Session()
-        self.session = cloudscraper.create_scraper(browser={
-            "browser": "chrome",
-            "platform": "windows",
-            "desktop": True
+
+        # создаём scraper как раньше
+        self.session = cloudscraper.create_scraper(
+            browser={
+                "browser": "chrome",
+                "platform": "windows",
+                "desktop": True
+            }
+        )
+
+        # 🔥 добавляем прокси тут (ПРАВИЛЬНО!)
+        self.session.proxies.update({
+            "http": "http://Ap4ZUE:uM6MaM7HEVfY@mproxy.site:11794",
+            "https": "http://Ap4ZUE:uM6MaM7HEVfY@mproxy.site:11794",
         })
+
+        # пробуем получить токены WB
         try:
             resp = self.session.get("https://www.wildberries.ru", timeout=10)
             self.session.cookies.update(resp.cookies)
@@ -25,8 +36,7 @@ class ParseWB:
     @staticmethod
     def __get_seller_id(url: str):
         regex = r'(?<=seller/)\d+'
-        seller_id = re.search(regex, url)[0]
-        return seller_id
+        return re.search(regex, url)[0]
     
 
     def _headers(self):
@@ -59,25 +69,21 @@ class ParseWB:
                 "spp": "30",
                 "supplier": self.seller_id,
                 "uclusters": "3",
+                "fbrand": "279103"
             }
 
             try:
                 response = self.session.get(
-                    f"https://www.wildberries.ru/__internal/catalog/sellers/v4/catalog",
+                    "https://www.wildberries.ru/__internal/catalog/sellers/v4/catalog",
                     headers=self._headers(),
-                    params=params
+                    params=params,
+                    timeout=20
                 )
-                # if response.status_code == 498:
-                #     print("⚠️ WB вернул 498, обновляю токен...")
-                #     # повторим авторизацию
-                #     self.session.get("https://www.wildberries.ru", timeout=10)
-                #     continue
 
                 if response.status_code != 200:
                     print(f"⚠️ Ошибка WB: {response.status_code}")
                     print(response.text[:200])
                     break
-
 
                 items_info = Items.model_validate(response.json())
                 if not items_info.products:
@@ -88,5 +94,6 @@ class ParseWB:
 
             except requests.RequestException as e:
                 print("⚠️ Ошибка запроса:", e)
+                break
 
         return Items(products=all_products)
