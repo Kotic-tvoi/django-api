@@ -1,8 +1,14 @@
 import requests
+import os
 import re
 import cloudscraper
 from .pydantic_models import Items
+from dotenv import load_dotenv
 
+
+
+load_dotenv()
+PROXY = os.getenv("PROXY")
 
 class ParseWB:
     def __init__(self, url: str, dest: str = '-1275551'):
@@ -20,8 +26,8 @@ class ParseWB:
 
         # 🔥 добавляем прокси тут (ПРАВИЛЬНО!)
         self.session.proxies.update({
-            "http": "http://Ap4ZUE:uM6MaM7HEVfY@mproxy.site:11794",
-            "https": "http://Ap4ZUE:uM6MaM7HEVfY@mproxy.site:11794",
+            "http": PROXY,
+            "https": PROXY,
         })
 
         # пробуем получить токены WB
