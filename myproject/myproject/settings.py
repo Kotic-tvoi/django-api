@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "price_history_view",
     "django_apscheduler",
     'hucster_change',
+    'ozon_parser',
 ]
 
 

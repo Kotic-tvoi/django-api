@@ -1,49 +1,36 @@
 import requests
 import os
 import re
-import cloudscraper
-from .pydantic_models import Items
 from dotenv import load_dotenv
-
-
+from .pydantic_models import Items
 
 load_dotenv()
+
 PROXY = os.getenv("PROXY")
+COOKIE = os.getenv("WB_COOKIE")
+BEARER = os.getenv("WB_BEARER")
+
 
 class ParseWB:
-    def __init__(self, url: str, dest: str = '-1275551'):
+    def __init__(self, url: str, dest: str = "-1275551"):
         self.seller_id = self.__get_seller_id(url)
         self.dest = str(dest)
 
-        # создаём scraper как раньше
-        self.session = cloudscraper.create_scraper(
-            browser={
-                "browser": "chrome",
-                "platform": "windows",
-                "desktop": True
-            }
-        )
+        self.session = requests.Session()
 
-        # 🔥 добавляем прокси тут (ПРАВИЛЬНО!)
-        self.session.proxies.update({
-            "http": PROXY,
-            "https": PROXY,
+        # self.session.proxies.update({
+        #     "http": PROXY,
+        #     "https": PROXY,
+        # })
+
+        # устанавливаем cookies вручную
+        self.session.headers.update({
+            "Cookie": COOKIE
         })
-
-        # пробуем получить токены WB
-        try:
-            resp = self.session.get("https://www.wildberries.ru", timeout=10)
-            self.session.cookies.update(resp.cookies)
-            print("🍪 WB cookies и токен получены:", list(resp.cookies.get_dict().keys()))
-        except Exception as e:
-            print("⚠️ Не удалось инициализировать сессию WB:", e)
-
 
     @staticmethod
     def __get_seller_id(url: str):
-        regex = r'(?<=seller/)\d+'
-        return re.search(regex, url)[0]
-    
+        return re.search(r'(?<=seller/)\d+', url)[0]
 
     def _headers(self):
         return {
@@ -52,16 +39,23 @@ class ParseWB:
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/142.0.0.0 Safari/537.36"
             ),
-            "Accept": "application/json, text/plain, */*",
+            "Accept": "*/*",
+            "Accept-Language": "ru-RU,ru;q=0.9",
             "Referer": f"https://www.wildberries.ru/seller/{self.seller_id}",
             "Origin": "https://www.wildberries.ru",
-            "Connection": "keep-alive",
-            "Cache-Control": "no-cache",
-            "Pragma": "no-cache"
+
+            # ОБЯЗАТЕЛЬНЫЕ заголовки
+            "Authorization": f"Bearer {BEARER}",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-SPA-Version": "13.14.1",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Dest": "empty",
         }
 
     def get_items(self):
-        _page = 1
+
+        page = 1
         all_products = []
 
         while True:
@@ -70,7 +64,7 @@ class ParseWB:
                 "curr": "rub",
                 "dest": self.dest,
                 "lang": "ru",
-                "page": _page,
+                "page": page,
                 "sort": "popular",
                 "spp": "30",
                 "supplier": self.seller_id,
@@ -78,28 +72,29 @@ class ParseWB:
                 "fbrand": "279103"
             }
 
-            try:
-                response = self.session.get(
-                    "https://www.wildberries.ru/__internal/catalog/sellers/v4/catalog",
-                    headers=self._headers(),
-                    params=params,
-                    timeout=20
-                )
+            response = self.session.get(
+                "https://www.wildberries.ru/__internal/catalog/sellers/v4/catalog",
+                headers=self._headers(),
+                params=params,
+                timeout=20
+            )
 
-                if response.status_code != 200:
-                    print(f"⚠️ Ошибка WB: {response.status_code}")
-                    print(response.text[:200])
-                    break
-
-                items_info = Items.model_validate(response.json())
-                if not items_info.products:
-                    break
-
-                all_products.extend(items_info.products)
-                _page += 1
-
-            except requests.RequestException as e:
-                print("⚠️ Ошибка запроса:", e)
+            if response.status_code == 498:
+                print("⚠️ WB требуется challenge → cookie/bearer протухли.")
                 break
+
+            if response.status_code != 200:
+                print("⚠️ Ошибка:", response.status_code)
+                print(response.text[:200])
+                break
+
+            data = response.json()
+            items = Items.model_validate(data)
+
+            if not items.products:
+                break
+
+            all_products.extend(items.products)
+            page += 1
 
         return Items(products=all_products)

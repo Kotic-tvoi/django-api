@@ -9,4 +9,5 @@ urlpatterns = [
     # path("storage/", include("wb_coeff_storage.urls", namespace="wb_coeff_storage")),
     # path("reports/", include("price_history_view.urls", namespace="price_history_view")),
     path("hucster/", include("hucster_change.urls")),
+    path("ozon_parser/", include("ozon_parser.urls"))
 ]
