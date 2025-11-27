@@ -1,14 +1,18 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from .ozon import parse_article
+# views.py
+
+from django.http import JsonResponse
+from .ozon import parse_ozon_many  # <-- берём многопоточный вариант
 
 
-@api_view(["GET"])
-def ozon_price(request):
-    article = request.GET.get("article")
+def ozon_parser(request):
+    raw = request.GET.get("articles")
 
-    if not article:
-        return Response({"error": "article required"}, status=400)
+    if not raw:
+        return JsonResponse({"error": "articles required"}, status=400)
 
-    data = parse_article(article)
-    return Response(data)
+    articles = [art.strip() for art in raw.split(",") if art.strip()]
+
+    # 🔥 многопоточный парсинг (3 потока как в твоём коде)
+    results = parse_ozon_many(articles, max_threads=3)
+
+    return JsonResponse({"results": results}, safe=False)
