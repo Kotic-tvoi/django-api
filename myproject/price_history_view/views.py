@@ -1,19 +1,19 @@
 from django.shortcuts import render
 from django.core.paginator import Paginator
-from django.http import HttpResponse
-from django.utils import timezone as djtz
-import csv, re
+# from django.http import HttpResponse
 from django.utils.http import urlencode
 
 from .models import PriceRecord
 from .forms import PriceFilterForm
-from get_price.constants import partners 
+from common.constants import partners
+from .exporters.xlsx_export import generate_price_history_xlsx
 
 
 def price_history_view(request):
     form = PriceFilterForm(request.GET or None)
     qs = PriceRecord.objects.all().order_by("-created_at", "partner_id", "item_id")
-    # ----- фильтрация -----
+
+    # --- ФИЛЬТРЫ ---
     if form.is_valid():
         partner = form.cleaned_data.get("partner")
         date_from = form.cleaned_data.get("date_from")
@@ -23,81 +23,45 @@ def price_history_view(request):
 
         if partner:
             qs = qs.filter(partner_id=int(partner))
+
         if date_from:
             qs = qs.filter(created_at__gte=date_from)
+
         if date_to:
             qs = qs.filter(created_at__lte=date_to)
 
         if item_mode == "selected" and item_ids_raw:
-            parts = [p.strip() for p in re.split(r"[\s,]+", item_ids_raw) if p.strip()]
+            from re import split
             try:
-                ids = [int(p) for p in parts]
+                ids = [int(x) for x in split(r"[\s,]+", item_ids_raw) if x.strip()]
                 qs = qs.filter(item_id__in=ids)
-            except Exception:
-                # некорректный ввод ID — просто не фильтруем
+            except:
                 pass
 
-    qs = qs.select_related(None).only(
-        "created_at", "partner_id", "dest", "item_id", "item_name", "price_basic", "price_product"
+    # --- ОПТИМИЗАЦИЯ ---
+    qs = qs.only(
+        "created_at", "partner_id", "partner_name",
+        "item_id", "item_name", "article", "price_product", "price_before_spp"
     )
 
-    # ----- экспорт -----
-    export = (request.GET.get("export") or "").strip().lower()
+    # --- EXPORT XLSX ---
+    if request.GET.get("export") == "xlsx":
+        return generate_price_history_xlsx(qs)
 
-    if export == "xlsx":
-        try:
-            from openpyxl import Workbook
-        except Exception:
-            return HttpResponse(
-                "openpyxl not installed. Run: pip install openpyxl",
-                content_type="text/plain; charset=utf-8",
-                status=500,
-            )
-
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "price_history"
-        headers = ["created_at", "partner_id", "dest", "item_id", "item_name", "price_basic", "price_product"]
-        ws.append(headers)
-
-        for r in qs.iterator(chunk_size=2000):
-            # Excel не поддерживает tz-aware datetime — убираем tzinfo
-            dt_local = djtz.localtime(r.created_at)
-            dt_naive = dt_local.replace(tzinfo=None)
-            ws.append([dt_naive, r.partner_id, r.dest, r.item_id, r.item_name, r.price_basic, r.price_product])
-
-        from io import BytesIO
-        buf = BytesIO()
-        wb.save(buf)
-        buf.seek(0)
-        resp = HttpResponse(
-            buf.read(),
-            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-        resp["Content-Disposition"] = 'attachment; filename="price_history.xlsx"'
-        return resp
-
-    # ----- обычный рендер таблицы -----
+    # --- ПАГИНАЦИЯ ---
     paginator = Paginator(qs, 200)
-    page_num = request.GET.get("page", 1)
     page_obj = paginator.get_page(request.GET.get("page"))
-    for rec in page_obj.object_list:
-        if rec.price_before_spp is None:
-            rec.price_before_spp = ""   # только для отображения
-        if not getattr(rec, "partner_name", ""):
-            rec.partner_name = partners.get(rec.partner_id, "")
-        if not getattr(rec, "article", ""):
-            rec.article = ""  # или заполни чем-то из item_name по шаблону
-        if not getattr(rec, "price_before_spp", None):
-            rec.price_before_spp = rec.price_basic
-
-    # соберём хвост без page для ссылок пагинации
+    # Чтобы не терять фильтрацию с пагинацией
     params = request.GET.copy()
     params.pop("page", None)
-    query_tail = urlencode(params, doseq=True)  # напр. "partner=215484&item_ids=123"
-    ctx = {
-        "form": form,
-        "rows": page_obj,
-        "query_tail": f"&{query_tail}" if query_tail else "",
-    }
-    return render(request, "price_history_view/price_history.html", ctx)
+    query_tail = urlencode(params, doseq=True)
+
+    return render(
+        request,
+        "price_history_view/price_history.html",
+        {
+            "form": form,
+            "rows": page_obj,
+            "query_tail": f"&{query_tail}" if query_tail else "",
+        }
+    )

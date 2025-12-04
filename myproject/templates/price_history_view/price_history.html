@@ -54,7 +54,7 @@
             <th>ID WB</th>
             <th>Наш артикул</th>
             <th>Название</th>
-            <th>Начальная цена (₽)</th>
+            <!-- <th>Начальная цена (₽)</th> -->
             <th>Цена до СПП (₽)</th>
             <th>Конечная цена (₽)</th>
           </tr>
@@ -67,7 +67,7 @@
             <td>{{ r.item_id }}</td>
             <td>{{ r.article }}</td>
             <td>{{ r.item_name }}</td>
-            <td>{{ r.price_basic }}</td>
+            <!-- <td>{{ r.price_basic }}</td> -->
             <td>{% if r.price_before_spp != None %}{{ r.price_before_spp }}{% endif %}</td>
             <td>{{ r.price_product }}</td>
           </tr>

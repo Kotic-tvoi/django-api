@@ -1,5 +1,7 @@
+"""Планировщик запуска программ"""
 import logging
 import os
+import pytz
 from datetime import timedelta
 
 from django.conf import settings
@@ -24,10 +26,9 @@ def delete_old_job_executions(max_age: int = 7 * 24 * 60 * 60) -> None:
 
 
 # === Функции заданий — на верхнем уровне (сериализуемые) ===
-
-
 def run_purge_old_prices() -> None:
-    logger.info("Running job: purge_old_prices (30 days)")
+    """Удаление записей больше days дней"""
+    logger.info("Running job: purge_old_prices")
     call_command("purge_old_prices", days=30)
 
 
@@ -49,55 +50,43 @@ def start() -> None:
     поэтому не даём стартовать планировщику дважды.
     """
     global _scheduler
-    if _scheduler and _scheduler.running:
-        logger.info("APScheduler: already running, skip start()")
+    if _scheduler:
         return
 
-    # В dev-сервере Django есть первичный процесс автоперезагрузчика — в нём не стартуем
-    if settings.DEBUG and os.environ.get("RUN_MAIN") != "true":
-        return
-
-    scheduler = BackgroundScheduler(
-        timezone=settings.TIME_ZONE if getattr(settings, "USE_TZ", False) else None
-    )
+    scheduler = BackgroundScheduler(timezone=pytz.timezone("Europe/Moscow"))
     scheduler.add_jobstore(DjangoJobStore(), "default")
 
-    # ВАЖНО: используем строковые ссылки в формате module:function (через двоеточие)
+    # Запуск сбора цен каждые n минут
     scheduler.add_job(
-        id="fetch_prices_every_5m",
-        func="API_ShowPrice.jobs:run_fetch_prices",          # ← двоеточие
+        run_fetch_prices,
         trigger="interval",
-        minutes=15,
-        jobstore="default",
-        replace_existing=True,
-        max_instances=1,
+        minutes=15,      # для теста ставим 1 минуту
+        id="fetch_prices_job",
+        replace_existing=True
     )
 
+    # Очистка логов ежедневно
     scheduler.add_job(
-        id="cleanup_old_job_executions_daily",
-        func="API_ShowPrice.jobs:run_cleanup_job_executions",  # ← двоеточие
+        run_cleanup_job_executions,
         trigger="cron",
         hour=3,
         minute=0,
-        jobstore="default",
+        id="cleanup_job_executions",
         replace_existing=True,
-        max_instances=1,
     )
 
+    # Удаление записей старше 30 дней
     scheduler.add_job(
-        id="purge_old_prices_daily",
-        func="price_history_view.jobs:run_purge_old_prices",
+        run_purge_old_prices,
         trigger="cron",
         hour=3,
         minute=15,
-        jobstore="default",
+        id="purge_old_prices",
         replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=600,  # 10 минут на опоздание
     )
 
     register_events(scheduler)
     scheduler.start()
+
     _scheduler = scheduler
     logger.info("APScheduler started")

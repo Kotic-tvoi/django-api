@@ -12,12 +12,12 @@ def fetch_partner_items(partner_id: int, dest: str):
             product = int(p.sizes[0].price.product / 100)
         except Exception:
             continue
-        vendor = getattr(p, "vendorCode", "") or getattr(p, "supplierVendorCode", "") or ""
+        article = ""
         rows.append({
             "id": p.id,
             "name": p.name,
             "price_basic": basic,
             "price_product": product,
-            "article": vendor,
+            "article": article,
         })
     return rows

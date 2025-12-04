@@ -44,10 +44,10 @@ INSTALLED_APPS = [
     'rest_framework',
 
     "get_price",
-    "price_history_view",
     "django_apscheduler",
     'hucster_change',
     'ozon_parser',
+    "price_history_view.apps.PriceHistoryViewConfig",
 ]
 
 
@@ -164,9 +164,9 @@ else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
+STATIC_ROOT = '/opt/django-app/django-api/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]  # если хранишь статику рядом с кодом
 # для продакшена:
-STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
 WB_DISCOUNTS_API_TOKEN = os.getenv("WB_API_TOKEN", "")  # токен «Скидки и цены»

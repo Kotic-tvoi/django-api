@@ -20,7 +20,7 @@ chrome_options = Options()
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-chrome_options.add_argument("--headless")
+# chrome_options.add_argument("--headless")
 chrome_options.add_argument("--window-size=1920,1080")
 chrome_options.add_argument(
     "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -145,7 +145,6 @@ def parse_ozon_many(articles, max_threads: int = 3):
                 "article": str(article),
                 "price": None,
                 "card_price": None,
-                "rating": None,
             }
         finally:
             driver.quit()

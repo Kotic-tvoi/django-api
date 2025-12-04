@@ -1,6 +1,6 @@
 XPATHS = {
     "price": [
-        "//span[contains(@class,'pdp_f7b tsHeadline500Medium')]",
+        "//span[contains(@class,'pdp_bg4 tsHeadline500Medium')]",
     ],
     "card_price": [
         "//span[contains(@class,'tsHeadline600Large')]",
