@@ -1,6 +1,5 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .parser import ParseWB
 from .constants import partners, dest_name
 from common.wb import fetch_partner_items
 from openpyxl import Workbook
