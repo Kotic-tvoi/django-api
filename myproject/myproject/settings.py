@@ -16,6 +16,21 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    """Читает булевы feature-флаги из переменных окружения."""
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+# Функции временно отключены по умолчанию, но весь код остаётся в проекте.
+# Для повторного включения достаточно задать true в .env и перезапустить приложение.
+PRICE_HISTORY_VIEW_ENABLED = env_flag("PRICE_HISTORY_VIEW_ENABLED", False)
+HUCSTER_CHANGE_ENABLED = env_flag("HUCSTER_CHANGE_ENABLED", False)
 
 
 # Quick-start development settings - unsuitable for production
@@ -136,17 +151,18 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-CRONJOBS = [
-    ('*/5 * * * *', 'django.core.management.call_command', ['fetch_prices']),
-]
+# Legacy-настройка django-crontab. При выключенной истории цен новых заданий нет.
+CRONJOBS = (
+    [('*/5 * * * *', 'django.core.management.call_command', ['fetch_prices'])]
+    if PRICE_HISTORY_VIEW_ENABLED
+    else []
+)
 
-# Чтобы планировщик автозапускался (можете выключить в проде, если нужно)
-APSCHEDULER_AUTOSTART = True
+# Планировщик истории цен запускается только при включённом feature-флаге.
+APSCHEDULER_AUTOSTART = PRICE_HISTORY_VIEW_ENABLED
 
 # Не обязательно, но удобно для логов
 APSCHEDULER_DATETIME_FORMAT = "Y-m-d H:i:s"
-
-load_dotenv(BASE_DIR / '.env')
 
 # Можно поддержать несколько ключей, через запятую:
 HUCSTER_API_KEYS = [x.strip() for x in os.getenv('HUCSTER_API_KEYS', '').split(',') if x.strip()]
