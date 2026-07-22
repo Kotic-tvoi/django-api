@@ -2,8 +2,10 @@
 # Install this file before re-enabling PRICE_HISTORY_VIEW_ENABLED or
 # HUCSTER_CHANGE_ENABLED.
 
+# APScheduler remains in the main requirements because python-telegram-bot
+# in the server environment also depends on it.
+
 # price_history_view
-APScheduler==3.6.3
 pytz==2025.2
 six==1.17.0
 tzlocal==5.3.1
