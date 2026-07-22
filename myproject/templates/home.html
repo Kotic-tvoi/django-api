@@ -1,4 +1,3 @@
-
 {% load static %}
 <!doctype html>
 <html lang="ru">
@@ -27,19 +26,23 @@
     <p class="muted">Быстрые ссылки:</p>
 
     <div class="grid">
+      {% if price_history_enabled %}
       <a class="card" href="/reports/price-history/">
         <h3>История цен</h3>
       </a>
+      {% endif %}
 
       <a class="card" href="/parser/get_price/?partner_id=215484&dest=-1257786">
         <h3>Текущие цены (API)</h3>
         <p>JSON по партнёру (JKeratin) и региону (Москва).</p>
       </a>
 
+      {% if hucster_change_enabled %}
       <a class="card" href="/hucster/">
         <h3>Отправка запросов в Huckster</h3>
         <p>Главная страница</p>
       </a>
+      {% endif %}
 
       <a class="card" href="/admin/">
         <h3>Админ-панель</h3>
