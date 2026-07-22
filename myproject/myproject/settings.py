@@ -31,6 +31,7 @@ def env_flag(name: str, default: bool = False) -> bool:
 # Для повторного включения достаточно задать true в .env и перезапустить приложение.
 PRICE_HISTORY_VIEW_ENABLED = env_flag("PRICE_HISTORY_VIEW_ENABLED", False)
 HUCSTER_CHANGE_ENABLED = env_flag("HUCSTER_CHANGE_ENABLED", False)
+OZON_PARSER_ENABLED = env_flag("OZON_PARSER_ENABLED", False)
 
 
 # Quick-start development settings - unsuitable for production
