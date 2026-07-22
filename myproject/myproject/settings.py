@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     'rest_framework',
 
     "get_price",
-    "django_apscheduler",
     'hucster_change',
     'ozon_parser',
     "price_history_view.apps.PriceHistoryViewConfig",
