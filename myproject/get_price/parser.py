@@ -91,6 +91,7 @@ class ParseWB:
             "appType": "64",
             "curr": "rub",
             "dest": self.dest,
+            "fbrand": "279103",
             "hide_dtype": "15",
             "hide_vflags": "4294967296",
             "lang": "ru",
