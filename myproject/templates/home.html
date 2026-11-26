@@ -5,8 +5,6 @@
   <meta charset="utf-8">
   <title>Главная • Панель проекта</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <!-- (если уже добавлял иконки) -->
-  <!-- <link rel="icon" href="{% static 'site/favicon.ico' %}"> -->
   <style>
     :root{--bg:#0b1220;--card:#121a2b;--border:#1f2a44;--text:#e8eefc;--muted:#9bb0d3;--accent:#3656d8}
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
@@ -39,8 +37,8 @@
 
       {% if hucster_change_enabled %}
       <a class="card" href="/hucster/">
-        <h3>Отправка запросов в Huckster</h3>
-        <p>Главная страница</p>
+        <h3>Модуль Huckster</h3>
+        <p>Ручная отправка товаров на проверку WB и OZON.</p>
       </a>
       {% endif %}
 
