@@ -6,4 +6,5 @@ urlpatterns = [
     path('run-all/ozon/', views.run_all_ozon, name='run_all_ozon'),
     path('run-all/wb/', views.run_all_wb, name='run_all_wb'),
     path('run-selected/', views.run_selected, name='run_selected'),
+    path('send/', views.send_to_hucster, name='send_to_hucster'),
 ]
